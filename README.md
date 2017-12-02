@@ -19,6 +19,7 @@ Other than that, only Ansible itself is required.  Tested using Ansible 2.0.2.0,
 The following role variables are relevant:
 
 * `sftp_home_partition`: The partition where SFTP users' home directories will be located.  Defaults to "/home".
+* `sftp_chroot_partition`: The partition where the SFTP users' chroot directories will be located.  If not set, the `sftp_home_partition` value is used.
 * `sftp_group_name`: The name of the Unix group to which all SFTP users must belong.  Defaults to "sftpusers".
 * `sftp_directories`: A list of directories that need to be created automatically by default for all SFTP user. Defaults to a blank list (i.e. "[]").
   * Values can be plain strings, or dictionaries containing `name` and (optionally) `mode` key/value pairs.
@@ -32,7 +33,7 @@ The following role variables are relevant:
   * `authorized`: An optional list of files placed in `files/` which contain valid public keys for the SFTP user.
   * `sftp_directories`: A list of directories that need to be individually created for an SFTP user. Defaults to a blank list (i.e. "[]").
   * `append`: Boolean to add `sftp_group_name` to the user groups (if any) instead of setting it (default to `False`).
-
+* `sftp_nologin_shell`: The "nologin" user shell assigned to sftp_users when shell access is set to False. (defaults to `/sbin/nologin`.)
 
 ## Example Playbook
 ```yaml
