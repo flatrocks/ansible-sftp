@@ -1,7 +1,8 @@
 ---
-- name: Ensure undefined sftp_chroot_partition defaults to sftp_home_partition
+
+- name: Default the sftp_chroot_partition to user home partition sftp_home_partition
   set_fact:
-    sftp_chroot_partition: sftp_home_partition
+    sftp_chroot_partition: "{{ sftp_home_partition }}"
   when: sftp_chroot_partition is not defined
 
 # Creates group for SFTP users.
@@ -60,6 +61,26 @@
     state: present
   with_items: "{{ sftp_users }}"
 
+# Chroot base dir must be created unless it is also the user home directory partition
+- name: Create sftp_chroot_partition
+  file:
+    path: "{{ sftp_chroot_partition }}"
+    owner: root
+    group: root
+    mode: "0755"
+    state: directory
+  when: sftp_chroot_partition != sftp_home_partition
+
+# A working chrooted SFTP setup requires root:sftgroup ownership of a user's home directory.
+- name: SFTP-Server | Correct ownership and permission of home directories
+  file:
+    path: "{{ sftp_chroot_partition }}/{{ item.name }}"
+    owner: root
+    group: "{{ sftp_group_name }}"
+    mode: "0750"
+    state: directory
+  with_items: "{{ sftp_users }}"
+
 # Install all relevant public keys.
 - name: SFTP-Server | Install public keys
   authorized_key:
@@ -78,6 +99,32 @@
     password: "{{ item.password }}"
   with_items: "{{ sftp_users }}"
   when: item.password is defined
+
+# Create directories for all SFTP users. Optional, but recommended.
+- name: SFTP-Server | Create directories
+  file:
+    path: "{{ sftp_chroot_partition }}/{{ item[0].name }}/{{ item[1].name | default(item[1]) }}"
+    owner: "{{ item[0].name }}"
+    group: "{{ item[0].name }}"
+    mode: "{{ item[1].mode | default(0750) }}"
+    state: directory
+  with_nested:
+    - "{{ sftp_users }}"
+    - "{{ sftp_directories }}"
+
+# Create directories for individual SFTP users. Optional.
+- name: SFTP-Server | Create directories per user
+  file:
+    path: "{{ sftp_chroot_partition }}/{{ item[0].name }}/{{ item[1].name | default(item[1]) }}"
+    owner: "{{ item[0].name }}"
+    group: "{{ item[0].name }}"
+    mode: "{{ item[1].mode | default(0750) }}"
+    state: directory
+  with_subelements:
+    - "{{ sftp_users }}"
+    - "sftp_directories"
+    - flags:
+      skip_missing: True
 
 - name: SFTP-Server | Create dev directory for logging
   file:
@@ -107,49 +154,3 @@
       auth,authpriv.*  /var/log/sftp/auth.log
   when: sftp_enable_logging
   notify: SFTP-Server | Restart rsyslog
-
-# Create directory for chroots (unless chroot dirs are user home dirs)
-- name: Create sftp_chroot_partition
-  file:
-    path: "{{ sftp_chroot_partition }}"
-    owner: root
-    group: root
-    mode: "0755"
-    state: directory
-  when: sftp_chroot_partition != sftp_home_partition
-
-# A working chrooted SFTP setup requires root:sftgroup ownership of a user's chroot directory.
-- name: SFTP-Server | Correct ownership and permission of chroot directories
-  file:
-    path: "{{ sftp_chroot_partition }}/{{ item.name }}"
-    owner: root
-    group: "{{ sftp_group_name }}"
-    mode: "0750"
-    state: directory
-  with_items: "{{ sftp_users }}"
-
-# Create directories for all SFTP users. Optional, but recommended.
-- name: SFTP-Server | Create common directories for each
-  file:
-    path: "{{ sftp_chroot_partition }}/{{ item[0].name }}/{{ item[1].name | default(item[1]) }}"
-    owner: "{{ item[0].name }}"
-    group: "{{ item[0].name }}"
-    mode: "{{ item[1].mode | default(0750) }}"
-    state: directory
-  with_nested:
-    - "{{ sftp_users }}"
-    - "{{ sftp_directories }}"
-
-# Create directories for individual SFTP users. Optional.
-- name: SFTP-Server | Create directories per user
-  file:
-    path: "{{ sftp_chroot_partition }}/{{ item[0].name }}/{{ item[1].name | default(item[1]) }}"
-    owner: "{{ item[0].name }}"
-    group: "{{ item[0].name }}"
-    mode: "{{ item[1].mode | default(0750) }}"
-    state: directory
-  with_subelements:
-    - "{{ sftp_users }}"
-    - "sftp_directories"
-    - flags:
-      skip_missing: True

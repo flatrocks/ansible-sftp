@@ -1,6 +1,5 @@
 ---
 sftp_home_partition: /home
-# sftp_chroot_partition: <set this value only if different from sftp_home_partition>
 sftp_group_name: sftpusers
 sftp_directories: []
 sftp_allow_passwords: False
