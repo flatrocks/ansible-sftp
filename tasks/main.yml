@@ -128,7 +128,7 @@
 
 - name: SFTP-Server | Create dev directory for logging
   file:
-    path: "{{ sftp_home_partition }}/{{ item.name }}/dev"
+    path: "{{ sftp_chroot_partition }}/{{ item.name }}/dev"
     owner: root
     group: root
     state: directory
@@ -143,7 +143,7 @@
     block: |
       # Create an additional socket for some of the sshd chrooted users.
       {% for user in sftp_users %}
-      $AddUnixListenSocket {{ sftp_home_partition }}/{{ user.name }}/dev/log
+      $AddUnixListenSocket {{ sftp_chroot_partition }}/{{ user.name }}/dev/log
       {% endfor %}
 
       # Log internal-sftp in a separate file
