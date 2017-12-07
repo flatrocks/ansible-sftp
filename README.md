@@ -1,7 +1,7 @@
 # SFTP-Server
 [![Ansible Role](https://img.shields.io/ansible/role/991.svg)](https://galaxy.ansible.com/johanmeiring/sftp-server/) [![Software License](https://img.shields.io/badge/License-MIT-orange.svg?style=flat-round)](https://github.com/johanmeiring/awesomeminer-go-sdk/blob/master/LICENSE) [![Build Status](https://travis-ci.org/johanmeiring/ansible-sftp.svg?branch=master)](https://travis-ci.org/johanmeiring/ansible-sftp)
 
-An Ansible role which configures an OpenSSH server for chrooted SFTP access.  The role is built in such a way that it will not unnecessarily alter a user's OpenSSH customisations.  Instead, it simply changes the crucial bits that it needs to, and adds the rest of its configuration in the form of a custom config block (OpenSSH's lack of some form of conf.d/ support forces this behaviour).
+An Ansible role which configures an OpenSSH server for chrooted SFTP access.  The role is built in such a way that it will not unnecessarily alter a user's OpenSSH customisations.  Instead, it simply changes the crucial bits that it needs to, and adds the rest of its configuration in the form of a custom config block (OpenSSH's lack of some form of conf.d/ support forces this behaviour).  If `sftp_chroot_partition` is defined, FTPS users will be chrooted to user-named directories in this directory.  Otherwise, FTPS users will be chrooted to their respective home directories.
 
 ## Requirements
 It is advisable that `scp_if_ssh` be set to `true` in the `ssh_connection` section of your `ansible.cfg` file, seeing as how Ansible uses SFTP for file transfers by default, and you can easily lock yourself out of your server's SFTP by using this role.  The SCP fallback will continue to work.  Example config:
@@ -36,7 +36,8 @@ The following role variables are relevant:
 * `sftp_nologin_shell`: The "nologin" user shell. (defaults to `/sbin/nologin`.)
 
 ## Notes:
-* You must ensure the `sftp_home_partition` exists and has correct ownership and permissions.
+* You must ensure the `sftp_home_partition` exists and has correct ownership and permissions before applying this role.
+  If `sftp_chroot_partition` is defined, it will be created as needed.
 * The `sftp_nologin_shell` setting defines the shell assigned to sftp_users when the sftp user's `shell` is set to False.
   (The nologin shell ensures the user may only use SFTP and have no other login permissions.)
   This value may vary depending on the operating system version.
